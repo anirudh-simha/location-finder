@@ -8,6 +8,7 @@
             [ring.util.response :as resp]
             [clj-http.client :as http]
             [clojure.walk :as walk]
+            [clojure.string :as string]
             [cheshire.core :as chs-json]
             [places-api.config])
   (:gen-class))
@@ -34,7 +35,7 @@
 ;;;; API Handlers
 
 (defn get-location-details
-  [location-name]
+  [location-name filter-query]
   (try
     (let [api-result (http/get places-api-url {:accept :json :as :json :query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse", "v" "20190223"}})
           ;venues (get (get (get api-result :body) "response") "venues")
@@ -45,14 +46,25 @@
 
           ]
            (doseq [venue (get response :venues)]
-             (do
-            (conj! venues-response {:id (get venue :id), :city (get (get venue :location) :city)
+             (let [locname (get venue :name "")
+                   state (get (get venue :location) :state "")
+                   lat (get (get venue :location) :lat)
+                   lng (get (get venue :location) :lng)
+                   category (get (get (get venue :categories []) 0 ) :name "")
+                   icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))
+                   queryable-fields (map string/lower-case [state locname category])
+                   ]
+              (do
+                (if (or (empty? filter-query) (some #(string/includes? % (string/lower-case filter-query)) queryable-fields) )
+                (conj! venues-response {:id (get venue :id), :city (get (get venue :location) :city)
                   , :name (get venue :name)
                   , :state (get (get venue :location) :state)
                   , :lat (get (get venue :location) :lat)
                   , :lng (get (get venue :location) :lng)
                   , :category (get (get (get venue :categories) 0) :name)
                   , :icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))})
+                )
+                )
             )
           )
       (persistent! venues-response)
@@ -82,7 +94,7 @@
 
 (defroutes app
   (GET "/" [] (hiccup/html main-page))
-  (GET "/location-data" [location] {:headers {"Content-Type" "application/json"}, :body (chs-json/generate-string (get-location-details location))})
+  (GET "/location-data" [location filterstr] {:headers {"Content-Type" "application/json"}, :body (chs-json/generate-string (get-location-details location filterstr))})
   ;(GET "/location-data" [location] {:body (get-location-details location)})
   (GET "/saved-locations" [username] {:headers {"Content-Type" "application/json"}, :body (get-user-saved-locations username)})
   (route/resources "/")

@@ -22,7 +22,7 @@
    (enable-console-print!)
   (go (let[location (.-value (.getElementById js/document "location"))
            category (.-value (.getElementById js/document "category"))
-       api-result (<! (http/get config/app-url-location {:query-params {"location" location}}))]
+       api-result (<! (http/get config/app-url-location {:query-params {"location" location, "filterstr" category}}))]
       (if(= (get api-result :body) "An error has occured.please try again")
         (r/render [:table [:tbody [:tr [:td "location not found!"]]]] (.getElementById js/document "results"))
       (r/render
@@ -43,7 +43,6 @@
       ]
       (for [record records]
 
-      (if  (or (empty? category)   (and (not(empty? category)) (= category (get (get (get record :categories) 0) :name))))
       ^{:key (get record :id)}
       ;[:tr
       ;  [:td (get record :name)]
@@ -63,7 +62,6 @@
         [:td (get record :category)]
           [:td [:img {:src (get record :icon)}]]
       ]
-      )
         
     )
     ]
