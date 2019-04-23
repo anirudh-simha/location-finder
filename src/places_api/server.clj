@@ -43,7 +43,6 @@
           venues (get response :venues)
           venues-response (transient [])
 
-          ;filtered-venues (map #(select-keys % [:id :name :city :state :lat :lng :categories]) venues)
           ]
            (doseq [venue (get response :venues)]
              (do
@@ -56,12 +55,10 @@
                   , :icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))})
             )
           )
-      ;(println (persistent! venues-response))
       (persistent! venues-response)
-      ;venues
     )
     (catch Exception e
-
+      (println e)
       "An error has occured.please try again"
     )
   )

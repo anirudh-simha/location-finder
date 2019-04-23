@@ -24,7 +24,7 @@
            category (.-value (.getElementById js/document "category"))
        api-result (<! (http/get config/app-url-location {:query-params {"location" location}}))]
       (if(= (get api-result :body) "An error has occured.please try again")
-        (r/render [:table [:tbody [:tr [:td "An error has occured"]]]] (.getElementById js/document "results"))
+        (r/render [:table [:tbody [:tr [:td "location not found!"]]]] (.getElementById js/document "results"))
       (r/render
           (render-locations-table (get api-result :body) category)
         (.getElementById js/document "results")
