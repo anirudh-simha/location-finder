@@ -10,7 +10,7 @@
   (list
   [:label {:for "location"} "Search for any location"]
       [:input {:type "text" :id "location" :placeholder "search for location"}]
-      [:input {:type "text" :id "category" :placeholder "search by category"}]
+      [:input {:type "text" :id "category" :placeholder "search by parameters"}]
       [:button {:id "submit" :on-click #(get-locations)} "Lets go!"]
       [:div#results]
       )
@@ -39,7 +39,7 @@
   [:table {:style {:border "1px solid black"}}
     [:tbody
       [:tr
-        [:td "name"][:td "city"][:td "state"][:td "lat"][:td "lng"][:td "categories"][:td "image"]
+        [:td "name"][:td "city"][:td "state"][:td "country"][:td "lat"][:td "lng"][:td "categories"][:td "image"]
       ]
       (for [record records]
 
@@ -57,6 +57,7 @@
         [:td (get record :name)]
         [:td (get record :city)]
         [:td (get record :state)]
+        [:td (get record :country)]
         [:td (get record :lat)]
         [:td (get record :lng)]
         [:td (get record :category)]

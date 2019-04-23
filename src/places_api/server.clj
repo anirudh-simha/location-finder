@@ -47,22 +47,26 @@
           ]
            (doseq [venue (get response :venues)]
              (let [locname (get venue :name "")
+                   city (get (get venue :location) :city "")
                    state (get (get venue :location) :state "")
+                   country (get (get venue :location) :country "")
                    lat (get (get venue :location) :lat)
                    lng (get (get venue :location) :lng)
                    category (get (get (get venue :categories []) 0 ) :name "")
                    icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))
-                   queryable-fields (map string/lower-case [state locname category])
+                   queryable-fields (map string/lower-case [city state country locname category])
                    ]
               (do
                 (if (or (empty? filter-query) (some #(string/includes? % (string/lower-case filter-query)) queryable-fields) )
-                (conj! venues-response {:id (get venue :id), :city (get (get venue :location) :city)
-                  , :name (get venue :name)
-                  , :state (get (get venue :location) :state)
-                  , :lat (get (get venue :location) :lat)
-                  , :lng (get (get venue :location) :lng)
-                  , :category (get (get (get venue :categories) 0) :name)
-                  , :icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))})
+                (conj! venues-response {:id (get venue :id)
+                  , :city city
+                  , :name locname
+                  , :state state
+                  , :country country
+                  , :lat lat
+                  , :lng lng
+                  , :category category
+                  , :icon icon})
                 )
                 )
             )
