@@ -23,9 +23,12 @@
   (go (let[location (.-value (.getElementById js/document "location"))
            category (.-value (.getElementById js/document "category"))
        api-result (<! (http/get config/app-url-location {:query-params {"location" location}}))]
+      (if(= (get api-result :body) "An error has occured.please try again")
+        (r/render [:table [:tbody [:tr [:td "An error has occured"]]]] (.getElementById js/document "results"))
       (r/render
-        (render-locations-table (get api-result :body) category)
+          (render-locations-table (get api-result :body) category)
         (.getElementById js/document "results")
+        )
       )
     )
   )
@@ -42,14 +45,23 @@
 
       (if  (or (empty? category)   (and (not(empty? category)) (= category (get (get (get record :categories) 0) :name))))
       ^{:key (get record :id)}
+      ;[:tr
+      ;  [:td (get record :name)]
+      ;  [:td (get (get record :location) :city)]
+      ;  [:td (get (get record :location) :state)]
+      ;  [:td (get (get record :location) :lat)]
+      ;  [:td (get (get record :location) :lng)]
+      ;  [:td (get (get (get record :categories) 0) :name)]
+      ;    [:td [:img {:src (str (get (get (get (get record :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get record :categories) 0) :icon) :suffix))}]]
+      ;]
       [:tr
         [:td (get record :name)]
-        [:td (get (get record :location) :city)]
-        [:td (get (get record :location) :state)]
-        [:td (get (get record :location) :lat)]
-        [:td (get (get record :location) :lng)]
-        [:td (get (get (get record :categories) 0) :name)]
-          [:td [:img {:src (str (get (get (get (get record :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get record :categories) 0) :icon) :suffix))}]]
+        [:td (get record :city)]
+        [:td (get record :state)]
+        [:td (get record :lat)]
+        [:td (get record :lng)]
+        [:td (get record :category)]
+          [:td [:img {:src (get record :icon)}]]
       ]
       )
         

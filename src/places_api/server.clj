@@ -41,16 +41,37 @@
           body (get api-result :body)
           response (get body :response)
           venues (get response :venues)
+          venues-response (transient [])
+
           ;filtered-venues (map #(select-keys % [:id :name :city :state :lat :lng :categories]) venues)
           ]
-      ;(println venues)
-
-      venues
+           (doseq [venue (get response :venues)]
+             (do
+            (conj! venues-response {:id (get venue :id), :city (get (get venue :location) :city)
+                  , :name (get venue :name)
+                  , :state (get (get venue :location) :state)
+                  , :lat (get (get venue :location) :lat)
+                  , :lng (get (get venue :location) :lng)
+                  , :category (get (get (get venue :categories) 0) :name)
+                  , :icon (str (get (get (get (get venue :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get venue :categories) 0) :icon) :suffix))})
+            )
+          )
+      ;(println (persistent! venues-response))
+      (persistent! venues-response)
+      ;venues
     )
     (catch Exception e
-      ("An error has occured.please try again")
+
+      "An error has occured.please try again"
     )
   )
+)
+
+(defn save-locations
+  [username locations]
+  ;(let [api-result (http/get places-api-url {:query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse"}})]
+   ; (println api-result)
+  ;)
 )
 
 (defn get-user-saved-locations
