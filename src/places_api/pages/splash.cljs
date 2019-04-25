@@ -46,7 +46,7 @@
 (defn save-locations
   []
   (enable-console-print!)
-  (let [checked-elements (map #(.-value %) (filter #(= true (.-checked %)) (array-seq (.getElementsByClassName js/document "venue-ids-select"))))]
+  (let [checked-elements (map #(.parse js/JSON (.-value %)) (filter #(= true (.-checked %)) (array-seq (.getElementsByClassName js/document "venue-ids-select"))))]
     (if (empty? checked-elements)
       (js/alert "Please select a location to save")
   (go
@@ -68,7 +68,7 @@
   []
   (go
     (let[api-result (<! (http/get config/app-url-saved-location ))]
-      (js/alert (get api-result :body))
+      (r/render (render-locations-table (get api-result :body) nil) (.getElementById js/document "results"))
     )
   )
 )
@@ -86,7 +86,7 @@
 
       ^{:key (get record :id)}
       [:tr
-        [:td [:input {:type "checkbox" :class "venue-ids-select" :value (get record :id)}]]
+        [:td [:input {:type "checkbox" :class "venue-ids-select" :value (.stringify js/JSON (clj->js record))}]]
         [:td (get record :name)]
         [:td (get record :city)]
         [:td (get record :state)]

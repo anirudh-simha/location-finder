@@ -106,8 +106,8 @@
 
 (defn save-locations
   [request]
-  (println request)
   (let [data (get-in request [:body "data"])]
+    (println data)
   (if (empty? data)
     {:headers {"Content-Type" "application/json"} :body (chs-json/generate-string {:error "Please provide some data to save!"}) :status 400}
     (do

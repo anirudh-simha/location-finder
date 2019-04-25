@@ -28,6 +28,7 @@
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-figwheel "0.5.18"]]
+  :jvmopts ["-Djavax.net.debug=all"]
 
   :cljsbuild {:builds [{:id "main"
                         :source-paths ["src"]

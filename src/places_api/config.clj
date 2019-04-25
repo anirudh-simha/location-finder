@@ -2,7 +2,7 @@
   (:gen-class))
 
 (def places-api-url "https://api.foursquare.com/v2/venues/search")
-(def places-api-multi-url "https://api.foursquare.com/v2/multi")
+(def places-api-venue-url "https://api.foursquare.com/v2/venues")
 (def client-id "5CVO2JLIW52KQBZOQPXEOPMZBGGFL214MQOSIVYJPC5FA0AK")
 (def client-secret "E42WUCYQ02J32VTHU4GT2ZNFJRIFUHUZWKZY2RTOB2KXZHVK")
 (def port 5001)
