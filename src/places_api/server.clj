@@ -37,25 +37,14 @@
 
 (def saved-locations (atom #{}))
 
-;;;; API Handlers
 
-(defn get-location-details
-  [location-name filter-query]
-  (println location-name)
-  (if (empty? location-name)
-    {:status 400 :body "please enter a location!"}
-    (try
-      (let [api-result (http/get places-api-url {:accept :json :as :json :query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse", "v" "20190223"}})
-          ;venues (get (get (get api-result :body) "response") "venues")
-          body (get api-result :body)
-          response (get body :response)
-          venues (get response :venues)
-          venues-response (transient [])
+;;util
 
-          ]
-           
-           (doseq [venue (get response :venues)]
-             (let [locname (get venue :name "")
+(defn get-filtered-response [data filter-query]
+  (let [venues-response (transient [])]
+  (doseq [venue data]
+    (let[
+                   locname (get venue :name "")
                    city (get-in venue [:location :city] "")
                    state (get (get venue :location) :state "")
                    country (get (get venue :location) :country "")
@@ -80,7 +69,28 @@
                 )
             )
           )
-      {:status 200 :headers {"Content-Type" "application/json"} :body (chs-json/generate-string (persistent! venues-response))}
+  (persistent! venues-response)
+  )
+
+)
+
+;;;; API Handlers
+
+(defn get-location-details
+  [location-name filter-query]
+  (if (empty? location-name)
+    {:status 400 :body "please enter a location!"}
+    (try
+      (let [api-result (http/get places-api-url {:accept :json :as :json :query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse", "v" "20190223"}})
+          ;venues (get (get (get api-result :body) "response") "venues")
+          body (get api-result :body)
+          response (get body :response)
+          venues (get response :venues)
+          venues-response (get-filtered-response venues filter-query)
+
+          ]
+           
+      {:status (if (empty? venues-response) 204 200) :headers {"Content-Type" "application/json"} :body (chs-json/generate-string venues-response)}
     )
     (catch Exception e
       (println e)

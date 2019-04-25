@@ -29,7 +29,10 @@
            category (.-value (.getElementById js/document "category"))
            api-result (<! (http/get config/app-url-location {:query-params {"location" location, "filterstr" category}}))]
         (if(not= (get api-result :status) 200)
-          (r/render [:table [:tbody [:tr [:td (get (get api-result :body) :error)]]]] (.getElementById js/document "results"))
+          (if (= (get api-result :status 204))
+            (js/alert "no data found!")
+            (r/render [:table [:tbody [:tr [:td (get (get api-result :body) :error)]]]] (.getElementById js/document "results"))
+          )
           (r/render
             (render-locations-table (get api-result :body) category)
             (.getElementById js/document "results")
