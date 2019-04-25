@@ -12,48 +12,78 @@
       [:input {:type "text" :id "location" :placeholder "search for location"}]
       [:input {:type "text" :id "category" :placeholder "search by parameters"}]
       [:button {:id "submit" :on-click #(get-locations)} "Lets go!"]
+      [:button {:id "save" :on-click #(save-locations)} "save locations"]
+      [:button {:id "get-saved-locations" :on-click #(get-saved-locations)} "get saved locations"]
       [:div#results]
       )
       (.getElementById js/document "app")
       )
       
  (defn get-locations
-   []
-   (enable-console-print!)
-  (go (let[location (.-value (.getElementById js/document "location"))
+  []
+  (enable-console-print!)
+  (if (empty? (.-value (.getElementById js/document "location")))
+    (js/alert "Please enter location!")
+    (go 
+      (let[location (.-value (.getElementById js/document "location"))
            category (.-value (.getElementById js/document "category"))
-       api-result (<! (http/get config/app-url-location {:query-params {"location" location, "filterstr" category}}))]
-      (if(= (get api-result :body) "An error has occured.please try again")
-        (r/render [:table [:tbody [:tr [:td "location not found!"]]]] (.getElementById js/document "results"))
-      (r/render
-          (render-locations-table (get api-result :body) category)
-        (.getElementById js/document "results")
+           api-result (<! (http/get config/app-url-location {:query-params {"location" location, "filterstr" category}}))]
+        (if(not= (get api-result :status) 200)
+          (r/render [:table [:tbody [:tr [:td (get (get api-result :body) :error)]]]] (.getElementById js/document "results"))
+          (r/render
+            (render-locations-table (get api-result :body) category)
+            (.getElementById js/document "results")
+          )
         )
       )
     )
   )
+)
+
+(defn save-locations
+  []
+  (enable-console-print!)
+  (let [checked-elements (map #(.-value %) (filter #(= true (.-checked %)) (array-seq (.getElementsByClassName js/document "venue-ids-select"))))]
+    (if (empty? checked-elements)
+      (js/alert "Please select a location to save")
+  (go
+  (let [
+        response (<!
+        (http/post config/app-url-saved-location {:json-params {:data checked-elements} }))
+        ]
+    (if(= (get response :status) 200)
+      (js/alert "data saved successfully")
+      (js/alert (get (get response :body) :error))
+    )
   )
+  )
+  )
+    )
+)
+
+(defn get-saved-locations
+  []
+  (go
+    (let[api-result (<! (http/get config/app-url-saved-location ))]
+      (js/alert (get api-result :body))
+    )
+  )
+)
+
+
 
 (defn render-locations-table
   [records category]
   [:table {:style {:border "1px solid black"}}
     [:tbody
       [:tr
-        [:td "name"][:td "city"][:td "state"][:td "country"][:td "lat"][:td "lng"][:td "categories"][:td "image"]
+        [:td "select"][:td "name"][:td "city"][:td "state"][:td "country"][:td "lat"][:td "lng"][:td "categories"][:td "image"]
       ]
       (for [record records]
 
       ^{:key (get record :id)}
-      ;[:tr
-      ;  [:td (get record :name)]
-      ;  [:td (get (get record :location) :city)]
-      ;  [:td (get (get record :location) :state)]
-      ;  [:td (get (get record :location) :lat)]
-      ;  [:td (get (get record :location) :lng)]
-      ;  [:td (get (get (get record :categories) 0) :name)]
-      ;    [:td [:img {:src (str (get (get (get (get record :categories) 0) :icon) :prefix) "bg_64" (get (get (get (get record :categories) 0) :icon) :suffix))}]]
-      ;]
       [:tr
+        [:td [:input {:type "checkbox" :class "venue-ids-select" :value (get record :id)}]]
         [:td (get record :name)]
         [:td (get record :city)]
         [:td (get record :state)]
@@ -69,15 +99,3 @@
   ]
 
 )
-  ;[:h1 "Hello from Reagent!"]
-  ;(.getElementById js/document "results"))
-      ;[:table
-      ;  [:tr 
-      ;    [:td
-      ;      "Hello"
-      ;     ]
-      ;    [:td
-      ;      "Hello"
-      ;     ]
-      ;   ]
-      ; ]

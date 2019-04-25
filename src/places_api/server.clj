@@ -10,6 +10,7 @@
             [clojure.walk :as walk]
             [clojure.string :as string]
             [cheshire.core :as chs-json]
+            [ring.middleware.json :as mdlware]
             [places-api.config])
   (:gen-class))
 
@@ -32,12 +33,19 @@
     [:h1 "Page not found"]]])
 
 
+;;store locations
+
+(def saved-locations (atom #{}))
+
 ;;;; API Handlers
 
 (defn get-location-details
   [location-name filter-query]
-  (try
-    (let [api-result (http/get places-api-url {:accept :json :as :json :query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse", "v" "20190223"}})
+  (println location-name)
+  (if (empty? location-name)
+    {:status 400 :body "please enter a location!"}
+    (try
+      (let [api-result (http/get places-api-url {:accept :json :as :json :query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse", "v" "20190223"}})
           ;venues (get (get (get api-result :body) "response") "venues")
           body (get api-result :body)
           response (get body :response)
@@ -45,9 +53,10 @@
           venues-response (transient [])
 
           ]
+           
            (doseq [venue (get response :venues)]
              (let [locname (get venue :name "")
-                   city (get (get venue :location) :city "")
+                   city (get-in venue [:location :city] "")
                    state (get (get venue :location) :state "")
                    country (get (get venue :location) :country "")
                    lat (get (get venue :location) :lat)
@@ -71,24 +80,38 @@
                 )
             )
           )
-      (persistent! venues-response)
+      {:status 200 :headers {"Content-Type" "application/json"} :body (chs-json/generate-string (persistent! venues-response))}
     )
     (catch Exception e
       (println e)
-      "An error has occured.please try again"
+      (if (contains? (ex-data e) :http-client)
+        {:status (get (ex-data e) :status) :headers {"Content-Type" "application/json"} :body (chs-json/generate-string {:error (get (get (chs-json/parse-string(:body (ex-data e))) "meta") "errorDetail")}) };can be better :)
+        {:status 500 :headers {"Content-Type" "application/json"} :body (chs-json/generate-string {:error "An error has occured.Please try again"})}
+      ;"An error has occured.please try again"
+      )
+    )
     )
   )
 )
 
 (defn save-locations
-  [username locations]
-  ;(let [api-result (http/get places-api-url {:query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse"}})]
-   ; (println api-result)
-  ;)
+  [request]
+  (println request)
+  (let [data (get-in request [:body "data"])]
+  (if (empty? data)
+    {:headers {"Content-Type" "application/json"} :body (chs-json/generate-string {:error "Please provide some data to save!"}) :status 400}
+    (do
+      ;(println locations)
+      (swap! saved-locations into data)
+      {:headers {"Content-Type" "application/json"} :body (chs-json/generate-string @saved-locations) :status 200}
+    )
+  )
+  )
 )
 
-(defn get-user-saved-locations
-  [username]
+(defn get-saved-locations
+  []
+  {:status 200, :headers {"Content-Type" "application/json"}, :body (chs-json/generate-string @saved-locations)}
   ;(let [api-result (http/get places-api-url {:query-params {"client_id" client-id, "client_secret" client-secret, "near" location-name, "intent" "browse"}})]
    ; (println api-result)
   ;)
@@ -98,13 +121,14 @@
 
 (defroutes app
   (GET "/" [] (hiccup/html main-page))
-  (GET "/location-data" [location filterstr] {:headers {"Content-Type" "application/json"}, :body (chs-json/generate-string (get-location-details location filterstr))})
+  (GET "/location-data" [location filterstr] (get-location-details location filterstr) )
   ;(GET "/location-data" [location] {:body (get-location-details location)})
-  (GET "/saved-locations" [username] {:headers {"Content-Type" "application/json"}, :body (get-user-saved-locations username)})
+  (GET "/saved-locations" [] (get-saved-locations)) ;{:headers {"Content-Type" "application/json"}, :body (get-user-saved-locations username)})
+  (POST "/saved-locations" request save-locations) ;{:headers {"Content-Type" "application/json"}, :body (get-user-saved-locations username)})
   (route/resources "/")
   (route/not-found (hiccup/html not-found-page)))
 
-(def site (handler/site app))
+(def site (handler/site (mdlware/wrap-json-body app)))
 
 ;;;; Managing the server in the REPL or from 'lein run'
 

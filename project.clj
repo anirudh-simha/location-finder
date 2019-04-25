@@ -15,9 +15,12 @@
                  [clj-http "3.9.1"]
                  [cljs-http "0.1.46"]
                  [cheshire "5.8.1"]
+                 [ring/ring-json "0.4.0"]
 
                  ;; Client
                  [reagent "0.8.1"]
+                 [ring/ring-mock "0.3.2"]
+
 
                  ;; Emacs integration
                  [com.cemerick/piggieback "0.2.1"]
